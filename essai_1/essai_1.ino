@@ -22,12 +22,11 @@ String read_response() {
   unsigned long first = millis();
   while(millis() - first < 500){  // If there's no incoming data for 500ms. Break.
     if(serialCard.available()){
-      //Serial.println("Oh");
       first = millis();
       byte c = serialCard.read();
       if(c < 0x10) result += '0';
       result += String(c, HEX) + ' ';
-      Serial.println(String(c, HEX));
+      Serial.println(String(c, BIN));
     }
   }
   
