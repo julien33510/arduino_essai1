@@ -12,6 +12,8 @@
 // création d'un objet Software Serial
 SoftwareSerial serialCard (RX, TX);
 
+//Variable de détection de la présence de la carte
+bool isntCardPresente = digitalRead(PRES); // carte présente = 0 & carte absente = 1
 
 
 
@@ -20,13 +22,13 @@ String read_response() {
   
   pinMode(TX, INPUT_PULLUP);  // Prevent signal collision.
   unsigned long first = millis();
-  while(millis() - first < 500){  // If there's no incoming data for 500ms. Break.
+  while(millis() - first < 100){  // If there's no incoming data for 100ms. Break.
     if(serialCard.available()){
       first = millis();
       byte c = serialCard.read();
       if(c < 0x10) result += '0';
       result += String(c, HEX) + ' ';
-      Serial.println(String(c));
+      //Serial.println(String(c));
     }
   }
   
@@ -41,7 +43,7 @@ String read_response() {
 void card_activate () {
   digitalWrite(VCC, HIGH);
   pinMode(CLK, OUTPUT);
-  delay(100);
+  delay(1);
   digitalWrite(RST, HIGH);
 
 
@@ -75,15 +77,16 @@ void setup() {
   //Ouverture liaisons séries 
   Serial.begin(9600);
   while (!Serial);
-  while(!serialCard);
   serialCard.begin(10753);
   serialCard.listen();
   Serial.println("Prêt");
+
+  
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  bool isntCardPresente = digitalRead(PRES); // carte présente = 0 & carte absente = 1
+  isntCardPresente = digitalRead(PRES); // carte présente = 0 & carte absente = 1
   
   while (isntCardPresente) {  // tant que carte absente, on n'alimente pas les contacteurs sur le lecteur : card_desactivate();
     isntCardPresente = digitalRead(PRES);
