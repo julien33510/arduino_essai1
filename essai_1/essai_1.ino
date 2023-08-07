@@ -26,7 +26,7 @@ String read_response() {
       //Serial.println("Oh");
       first = millis();
       byte c = serialCard.read();
-      //if(c < 0x10) result += '0';
+      if(c < 0x10) result += '0';
       result += String(c, HEX) + ' ';
     }
   }
