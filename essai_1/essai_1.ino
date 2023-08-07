@@ -26,7 +26,7 @@ String read_response() {
       byte c = serialCard.read();
       if(c < 0x10) result += '0';
       result += String(c, HEX) + ' ';
-      Serial.println(String(c, BIN));
+      Serial.println(String(c));
     }
   }
   
@@ -94,6 +94,9 @@ void loop() {
   
   // on sort de la boucle donc une carte est présente
   Serial.println("Carte présente");
+  if (serialCard.overflow()) {
+        Serial.println("portOne overflow!");
+    }
   card_activate ();
   Serial.print(read_response());
 
