@@ -17,7 +17,6 @@ SoftwareSerial serialCard (RX, TX);
 
 String read_response() {
   String result = "";
-  Serial.println(result);
   
   pinMode(TX, INPUT_PULLUP);  // Prevent signal collision.
   unsigned long first = millis();
@@ -28,6 +27,7 @@ String read_response() {
       byte c = serialCard.read();
       if(c < 0x10) result += '0';
       result += String(c, HEX) + ' ';
+      Serial.println(String(c, HEX));
     }
   }
   
