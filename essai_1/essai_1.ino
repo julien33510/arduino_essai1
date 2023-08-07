@@ -84,7 +84,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  bool isntCardPresente = digitalRead(PRES); // carte présente = 1 & carte absente = 0
+  bool isntCardPresente = digitalRead(PRES); // carte présente = 0 & carte absente = 1
   
   while (isntCardPresente) {  // tant que carte absente, on n'alimente pas les contacteurs sur le lecteur : card_desactivate();
     isntCardPresente = digitalRead(PRES);
