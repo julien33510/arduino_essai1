@@ -45,14 +45,15 @@ void card_activate () {
   pinMode(CLK, OUTPUT);
   delay(1);
   digitalWrite(RST, HIGH);
-
-
+  serialCard.listen();
+  while(!serialCard.isListening());
 }
 
 void card_desactivate() {
   digitalWrite(VCC, LOW);
   digitalWrite(RST, LOW);
   pinMode(CLK, INPUT);
+  serialCard.stopListening();
 
 }
 
@@ -78,7 +79,6 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);
   serialCard.begin(10753);
-  serialCard.listen();
   Serial.println("Prêt");
 
   
