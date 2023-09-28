@@ -1,5 +1,7 @@
+#include <SoftwareSerial_hm.h>
+
 #include <Arduino.h>
-#include <SoftwareSerial.h>
+
 
 
 #define VCC 13
@@ -9,28 +11,133 @@
 #define TX 3
 #define PRES 5
 
+//Variables
+byte TS, T0, TA1, TB1, TC1, TD1, K;
+byte TA2, TB2, TC2, TD2;
+byte TA3, TB3, TC3, TD3 ;
+byte TCK, T ;
+String historicals_caracters;
+
+bool isntCardPresente = digitalRead(PRES); //Variable de détection de la présence de la carte : carte présente = 0 & carte absente = 1
+
+
+
 // création d'un objet Software Serial
-SoftwareSerial serialCard (RX, TX, false);
+SoftwareSerial_hm serialCard (RX, TX, false);
 
 
-//Variable de détection de la présence de la carte
-bool isntCardPresente = digitalRead(PRES); // carte présente = 0 & carte absente = 1
+void analyse_atr(String ATR) {
+  String _atr = ATR;
+  _atr.replace(" ","");
+  Serial.println("_atr = " + _atr);
+  TS = stringToByte(_atr.substring(0, 2));  // [0, 2[
+  T0 = stringToByte(_atr.substring(2, 4));  // [2, 4[
+  
+  //i représente la position des caractères dans l'ATR, commence à 4 juste après le caractère T0, chaque caractère est sur 2i soit 8bits
+  // il servira à déterminer la position des caractères facultatif de l'ATR
+  int i = 4 ;
 
+  //Analyse T0
+    //détermination de K, nb de caratères d'historique de l'ATR
+    K = T0 & 0x0F ;
+
+    // Présence de TA1 : sur le bit 4
+    if((T0 & 0x10)) {
+      TA1 = stringToByte(_atr.substring(i, i+2));
+      i += 2; }
+    // Peésence de TB1 sur le bit 5
+    if((T0 & 0x20)) {
+      TB1 = stringToByte(_atr.substring(i, i+2));
+      i += 2; }
+    // Peésence de TC1 sur le bit 6
+    if((T0 & 0x40)) {
+      TC1 = stringToByte(_atr.substring(i, i+2));
+      i += 2; }
+    // Peésence de TD1 sur le bit 7
+    if((T0 & 0x80)) {
+      TD1 = stringToByte(_atr.substring(i, i+2));
+      i += 2; }
+
+  //Caractères Tx2 
+    if ((TD1 & 0xF0)) { //présence d'un bit 1 sur l'un des bits 4 à 7 alors présence de caractère Tx2
+      // Présence de TA1 : sur le bit 4
+      if((TD1 & 0x10)) {
+      TA2 = stringToByte(_atr.substring(i, i+2));
+      i += 2; }
+      // Peésence de TB1 sur le bit 5
+      if((TD1 & 0x20)) {
+      TB2 = stringToByte(_atr.substring(i, i+2));
+      i += 2; }
+      // Peésence de TC1 sur le bit 6
+      if((TD1 & 0x40)) {
+      TC2 = stringToByte(_atr.substring(i, i+2));
+      i += 2; }
+      // Peésence de TD1 sur le bit 7
+      if((TD1 & 0x80)) {
+      TD2 = stringToByte(_atr.substring(i, i+2));
+      i += 2;}
+    }
+
+  //Caractères Tx3
+    if ((TD2 & 0xF0)) { //présence d'un bit 1 sur l'un des bits 4 à 7 alors présence de caractère Tx2
+      // Présence de TA1 : sur le bit 4
+      if((TD2 & 0x10)) {
+      TA3 = stringToByte(_atr.substring(i, i+2));
+      i += 2; }
+      // Peésence de TB1 sur le bit 5
+      if((TD2 & 0x20)) {
+      TB3 = stringToByte(_atr.substring(i, i+2));
+      i += 2; }
+      // Peésence de TC1 sur le bit 6
+      if((TD2 & 0x40)) {
+      TC3 = stringToByte(_atr.substring(i, i+2));
+      i += 2; }
+      // Peésence de TD1 sur le bit 7
+      if((TD2 & 0x80)) {
+      TD3 = stringToByte(_atr.substring(i, i+2));
+      i += 2;}
+    }
+  
+  //Caractères historiques
+  historicals_caracters = _atr.substring(i, i+(K*2));
+  i = i+(K*2);
+  
+  //Caractères TCK
+  TCK = stringToByte(_atr.substring(i, i+2));
+
+  // Protocole T
+  T = TD1 & 0x0F;
+
+
+
+    
+  
+
+}
+
+byte stringToByte(String stb) {
+  String sub;
+  char buf[3];
+  stb.toCharArray(buf, 3);
+  byte b = (byte)strtol(buf,0,16);
+  return b;
+}
 
 String transmitAPDU_T0(String apdu) {
 
   String sub;
-  char buf[3];
+  char buf[2];
 
+  pinMode(TX, OUTPUT); 
   serialCard.stopListening();
-
   for(int i = 0; i < apdu.length()+1; i += 2){
-    sub = apdu.substring(i, i+2);
-    sub.toCharArray(buf, 3);
+    sub = apdu.substring(i, i+1);
+    sub.toCharArray(buf, 2);
     byte b = (byte)strtol(buf, 0, 16);
-    serialCard.write(b);
+    serialCard.write_8E2(b);
+
   }
-  serialCard.listen();
+  //serialCard.listen();
   String response1 = read_response();
 
   return response1;
@@ -45,6 +152,7 @@ String read_response() {
   String result = "";
   
   pinMode(TX, INPUT_PULLUP);  // Prevent signal collision.
+  serialCard.listen();
   unsigned long first = millis();
   while(millis() - first < 100){  // If there's no incoming data for 100ms. Break.
     if(serialCard.available()){
@@ -55,7 +163,6 @@ String read_response() {
     }
   }
   
-  //pinMode(TX, OUTPUT);
   if(result.length() < 2) {
     Serial.println("No responses.");
   }
@@ -96,8 +203,6 @@ void card_desactivate() {
 
 void setup() {
   // Clock 4MHz
-  //pinMode(TX, OUTPUT);
-  //pinMode(CLK, OUTPUT);
   TCCR2A = _BV(COM2A0) | _BV(COM2B1) | _BV(WGM21) | _BV(WGM20);
   TCCR2B = _BV(WGM22) | _BV(CS20);
   OCR2A = 1;
@@ -131,51 +236,58 @@ void loop() {
     
   };
   
-  // on sort de la boucle donc une carte est présente
-  //Serial.println("Carte présente");
-  //if (serialCard.overflow()) {
-  //      Serial.println("portOne overflow!");
-  //  }
-  //delay(1000);
-  //card_desactivate();
-  //delay(1000);
+
   card_activate ();
 
-
+  //récup de l'ATR
   String ATR = read_response();
   Serial.println("ATR = " + ATR);
 
-  String _atr = ATR;
-  _atr.replace(" ","");
-  Serial.println("_atr = " + _atr);
-  String ts = _atr.substring(0, 2);
-  String t0 = _atr.substring(2, 4);
-  String ta1 = _atr.substring(4, 6);
-  Serial.println("ts = " + ts);
-  Serial.println("t0 = " + t0);
-  Serial.println("ta1 = " + ta1);
+  //Analyse de l'ATR
+  analyse_atr(ATR);
+  Serial.print("TS = ");
+  Serial.println(TS, HEX);
+  Serial.print("T0 = ");
+  Serial.println(T0, HEX);
+  Serial.print("Nb de caractères d'historique K : ");
+  Serial.println(K, DEC);
+  Serial.println(K);
+  Serial.print("TA1 = ");
+  Serial.println(TA1, HEX);
+  Serial.println(TA1, BIN);
+  Serial.print("TB1 = ");
+  Serial.println(TB1, HEX);
+  Serial.print("TC1 = ");
+  Serial.println(TC1, HEX);
+  Serial.print("TD1 = ");
+  Serial.println(TD1, HEX);
+  if ((TA2 & 0xFF)) {Serial.print("TA2 = ");Serial.println(TA2, HEX);};
+  if ((TB2 & 0xFF)) {Serial.print("TB2 = ");Serial.println(TB2, HEX);};
+  if ((TC2 & 0xFF)) {Serial.print("TC2 = ");Serial.println(TC2, HEX);};
+  if ((TD2 & 0xFF)) {Serial.print("TD2 = ");Serial.println(TD2, HEX);};
+  if ((TA3 & 0xFF)) {Serial.print("TA3 = ");Serial.println(TA3, HEX);};
+  if ((TB3 & 0xFF)) {Serial.print("TB3 = ");Serial.println(TB3, HEX);};
+  if ((TC3 & 0xFF)) {Serial.print("TC3 = ");Serial.println(TC3, HEX);};
+  if ((TD3 & 0xFF)) {Serial.print("TD3 = ");Serial.println(TD3, HEX);};
+  Serial.print("Caractères historiques = ");
+  Serial.println(historicals_caracters);
+  Serial.print("TCK = ");
+  Serial.println(TCK, HEX);
+  Serial.print("Protocole T = ");
+  Serial.println(T, DEC);
 
-  // convertion en binaire
-  byte buffer[t0.length()+1];
-  t0.toCharArray(buffer, t0.length()+1);
-  byte _t0 = (byte)strtol(buffer, 0, 16);
-  Serial.println(_t0, BIN);
+  //Envoi première commande
+  //String First_Com = "00A4040C020520";
+  String First_Com = "00A40000023F00";
+  String First_response = transmitAPDU_T0(First_Com);
+  Serial.println(First_response);
 
-  //TA1 exist ?
-  if((_t0 & 0x80)) {
-    Serial.println("Présence de TA1");
-  }
+  Serial.println(F_CPU);
+  uint16_t bit_delay = (F_CPU / 10753) / 4;
+  Serial.println(bit_delay);
+  uint16_t _tx_delay = bit_delay - 15/4 ;
+   Serial.println(_tx_delay);
 
-  /*
-  serialCard.begin(125000);
-  String GO_TO_DF = "00 A4 04 0C 06 FF 54 41 43";
-  String EF_ICC = "00 02";
-  String mess_apdu = GO_TO_DF + " " + EF_ICC ;
-  //mess_apdu = mess_apdu.replace(" ","");
-  Serial.println(mess_apdu);
-  String result = "";
-  result = transmitAPDU_T0(mess_apdu);
-  */
 
   while (!isntCardPresente) {
     isntCardPresente = digitalRead(PRES);
