@@ -17,6 +17,7 @@ byte TA2, TB2, TC2, TD2;
 byte TA3, TB3, TC3, TD3 ;
 byte TCK, T ;
 String historicals_caracters;
+char buf[8];
 
 bool isntCardPresente = digitalRead(PRES); //Variable de détection de la présence de la carte : carte présente = 0 & carte absente = 1
 
@@ -123,13 +124,29 @@ byte stringToByte(String stb) {
   return b;
 }
 
-String transmitAPDU_T0(String apdu) {
-
-  String sub;
-  char buf[2];
+void transmitAPDU_T0(char* apdu, uint8_t ln) {
 
   pinMode(TX, OUTPUT); 
   serialCard.stopListening();
+  for(int i = 0; i < ln; i ++){
+    
+    serialCard.write_8E2(apdu[i]);
+
+  }
+  pinMode(TX, INPUT); 
+}
+
+/*String transmitAPDU_T0(String apdu) {
+
+  
+  
+  
+  
+  //String sub;
+  //char buf[2];
+
+  //pinMode(TX, OUTPUT); 
+  //serialCard.stopListening();
   for(int i = 0; i < apdu.length()+1; i += 2){
     sub = apdu.substring(i, i+1);
     sub.toCharArray(buf, 2);
@@ -144,7 +161,7 @@ String transmitAPDU_T0(String apdu) {
 
 
 }
-
+  */
 
 
 
@@ -179,6 +196,7 @@ void card_activate () {
   pinMode(CLK, OUTPUT);
   pinMode(RX, INPUT_PULLUP);
   pinMode(TX, INPUT_PULLUP);
+  
   delay(1);
   digitalWrite(RST, HIGH);
   serialCard.stopListening();
@@ -239,6 +257,7 @@ void loop() {
 
   card_activate ();
 
+  
   //récup de l'ATR
   String ATR = read_response();
   Serial.println("ATR = " + ATR);
@@ -275,19 +294,29 @@ void loop() {
   Serial.println(TCK, HEX);
   Serial.print("Protocole T = ");
   Serial.println(T, DEC);
-
+ 
   //Envoi première commande
   //String First_Com = "00A4040C020520";
-  String First_Com = "00A40000023F00";
-  String First_response = transmitAPDU_T0(First_Com);
-  Serial.println(First_response);
+  //String First_Com = "00A40000023F00";
+  //String First_response = transmitAPDU_T0(First_Com);
+  //Serial.println(First_response); 
 
+  buf[0] = 0x00;
+  buf[1] = 0xA4;
+  buf[2] = 0x00;
+  buf[3] = 0x00;
+  buf[4] = 0x02;
+  buf[5] = 0x3F;
+  buf[6] = 0x00;
+  transmitAPDU_T0(buf,7);
+
+  /*
   Serial.println(F_CPU);
   uint16_t bit_delay = (F_CPU / 10753) / 4;
   Serial.println(bit_delay);
   uint16_t _tx_delay = bit_delay - 15/4 ;
    Serial.println(_tx_delay);
-
+  */
 
   while (!isntCardPresente) {
     isntCardPresente = digitalRead(PRES);
