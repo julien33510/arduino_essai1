@@ -18,7 +18,7 @@ byte TA2, TB2, TC2, TD2;
 byte TA3, TB3, TC3, TD3 ;
 byte TCK, T ;
 String historicals_caracters;
-char buf[8];
+//char buf[8];
 
 bool isntCardPresente = digitalRead(PRES); //Variable de détection de la présence de la carte : carte présente = 0 & carte absente = 1
 
@@ -125,7 +125,7 @@ byte stringToByte(String stb) {
   return b;
 }
 
-void transmitAPDU_T0(char* apdu, uint8_t ln) {
+/*void transmitAPDU_T0(char* apdu, uint8_t ln) {
 
   pinMode(TX, OUTPUT); 
   serialCard.stopListening();
@@ -135,24 +135,27 @@ void transmitAPDU_T0(char* apdu, uint8_t ln) {
 
   }
   pinMode(TX, INPUT); 
-}
+}*/
 
-/*String transmitAPDU_T0(String apdu) {
 
+String transmitAPDU_T0(String apdu) {
   
-  
-  
-  
-  //String sub;
-  //char buf[2];
+  String sub;
+  char buf[3];
 
-  //pinMode(TX, OUTPUT); 
+  pinMode(TX, OUTPUT); 
   //serialCard.stopListening();
-  for(int i = 0; i < apdu.length()+1; i += 2){
-    sub = apdu.substring(i, i+1);
-    sub.toCharArray(buf, 2);
+  for(int i = 0; i < apdu.length(); i += 2){
+    sub = apdu.substring(i, i+2);
+    //Serial.print("i : ");
+    //Serial.println(i);
+    //Serial.print("sub : ");
+    //Serial.println(sub);
+    sub.toCharArray(buf, 3);
     byte b = (byte)strtol(buf, 0, 16);
-    serialCard.write_8E2(b);
+    //Serial.print("byte : ");
+    //Serial.println(b, HEX);
+    serialCard.write(b);
 
   }
   //serialCard.listen();
@@ -161,8 +164,8 @@ void transmitAPDU_T0(char* apdu, uint8_t ln) {
   return response1;
 
 
-}
-  */
+} 
+
 
 
 
@@ -264,6 +267,7 @@ void loop() {
   Serial.println("ATR = " + ATR);
 
   //Analyse de l'ATR
+  /*
   analyse_atr(ATR);
   Serial.print("TS = ");
   Serial.println(TS, HEX);
@@ -294,23 +298,41 @@ void loop() {
   Serial.print("TCK = ");
   Serial.println(TCK, HEX);
   Serial.print("Protocole T = ");
-  Serial.println(T, DEC);
+  Serial.println(T, DEC);*/
  
   //Envoi première commande
   //String First_Com = "00A4040C020520";
-  //String First_Com = "00A40000023F00";
-  //String First_response = transmitAPDU_T0(First_Com);
-  //Serial.println(First_response); 
+  String First_Com = "00A4040C06";
+  String First_response = transmitAPDU_T0(First_Com);
+  Serial.println(First_response); 
+  String Second_com = "FF544143484F";
+  String Second_response = transmitAPDU_T0(Second_com);
+  Serial.println(Second_response);
+  String com3 = "00A4020C02";
+  String com4 = "0520";
+  String response3 = transmitAPDU_T0(com3);
+  Serial.println(response3);
+  String response4 = transmitAPDU_T0(com4);
+  Serial.println(response4);
+  String com5 = "802A900000";
+  String response5 = transmitAPDU_T0(com5);
+  Serial.println(response5);
+  String com6 = "00B000008F";
+  String response6 = transmitAPDU_T0(com6);
+  Serial.println(response6);
 
+
+  /*
   buf[0] = 0x00;
   buf[1] = 0xA4;
-  buf[2] = 0x00;
-  buf[3] = 0x00;
+  buf[2] = 0x02;
+  buf[3] = 0x0C;
   buf[4] = 0x02;
-  buf[5] = 0x3F;
-  buf[6] = 0x00;
-  transmitAPDU_T0(buf,7);
-
+  buf[5] = 0x00;
+  buf[6] = 0x02;
+  //transmitAPDU_T0(buf,7);
+  //Serial.println(buf[3], HEX);
+  
   /*
   Serial.println(F_CPU);
   uint16_t bit_delay = (F_CPU / 10753) / 4;
