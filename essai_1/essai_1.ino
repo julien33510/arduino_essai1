@@ -1,4 +1,5 @@
-#include <SoftwareSerial_hm.h>
+#include <SoftwareSerial_hm2.h>
+
 
 #include <Arduino.h>
 
@@ -24,7 +25,7 @@ bool isntCardPresente = digitalRead(PRES); //Variable de détection de la prése
 
 
 // création d'un objet Software Serial
-SoftwareSerial_hm serialCard (RX, TX, false);
+SoftwareSerial_hm2 serialCard (RX, RX, false);
 
 
 void analyse_atr(String ATR) {
@@ -130,7 +131,7 @@ void transmitAPDU_T0(char* apdu, uint8_t ln) {
   serialCard.stopListening();
   for(int i = 0; i < ln; i ++){
     
-    serialCard.write_8E2(apdu[i]);
+    serialCard.write(apdu[i]);
 
   }
   pinMode(TX, INPUT); 
